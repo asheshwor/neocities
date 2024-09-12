@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiple Slides with Levels</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      position: relative;
+      padding: 10px;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    .sub-slide {
+      display: none;
+      width: 100%;
+      height: calc(100vh / 3); /* Each sub-slide takes 1/3 of the slide height */
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Divider between sub-slides */
+    }
+
+    .sub-slide:first-child {
+      border-top: 1px solid rgba(255, 255, 255, 0.2); /* Top border for the first sub-slide */
+    }
+
+    .sub-slide.active {
+      display: block;
+    }
+
+    .header {
+      margin-bottom: 20px;
+      font-size: 1.5em;
+      font-weight: bold;
+      text-align: center;
+      position: relative; /* Make header relative for background positioning */
+    }
+
+    .header::after {
+      content: "";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%; /* Full-width background for the header */
+      background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent black background */
+      z-index: -1; /* Place background behind the header text */
+    }
+
+    .content {
+      /* Style the content area below the header */
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide active">
+    <div class="header">Slide 1 Title</div>
+    <div class="sub-slide active">Slide 1 Level 1 Content</div>
+    <div class="sub-slide">Slide 1 Level 2 Content</div>
+    <div class="sub-slide">Slide 1 Level 3 Content</div>
+    <div class="footer">Slide <span class="slide-number"></span> / <span class="total-slides"></span> - Level <span class="sub-slide-number"></span> / 3</div>
+  </div>
+  <div class="slide">
+    <div class="header">Slide 2 Title</div>
+    <div class="sub-slide active">We added new classes, .slide-number, .total-slides, and .sub-slide-number to the footer elements that will hold the slide and sub-slide numbers.
+Inside the loop that iterates through slides, we update the text content of these newly added elements with the current slide index (plus 1 for display), total slides, and current sub-slide index (plus 1 for display).</div>
+    <div class="sub-slide">Slide 2 Level 2 Content</div>
+    <div class="sub-slide">Slide 2 Level 3 Content</div>
+    <div class="footer">Slide <span class="slide-number"></span> / <span class="total-slides"></span> - Level <span class="sub-slide-number"></span> / 3</div>
+  </div>
+  <div class="slide">
+    <div class="header">Slide 3 Title</div>
+    <div class="sub-slide active">Slide 3 Level 1 Content</div>
+    <div class="sub-slide">Slide 3 Level 2 Content</div>
+    <div class="sub-slide">Slide 3 Level 3 Content</div>
+    <div class="footer">Slide <span class="slide-number"></span> / <span class="total-slides"></span> - Level <span class="sub-slide-number"></span> / 3 </div>
+    </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+let currentSlideIndex = 0;
+let currentSubSlideIndex = 0;
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'ArrowRight') {
+    currentSlideIndex++;
+  } else if (event.key === 'ArrowLeft') {
+    currentSlideIndex--;
+  } else if (event.key === 'ArrowDown') {
+    currentSubSlideIndex++;
+  } else if (event.key === 'ArrowUp') {
+    currentSubSlideIndex--;
+  }
+
+  // Ensure valid slide and sub-slide indexes
+  currentSlideIndex = Math.max(0, Math.min(currentSlideIndex, slides.length - 1));
+  currentSubSlideIndex = Math.max(0, Math.min(currentSubSlideIndex, 2)); // Max 2 sub-slides per slide
+
+  // Update active slide and sub-slide
+  slides.forEach((slide, index) => {
+    slide.classList.toggle('active', index === currentSlideIndex);
+    slide.querySelectorAll('.sub-slide').forEach((subSlide, subIndex) => {
+      subSlide.classList.toggle('active', subIndex === currentSubSlideIndex);
+    });
+
+    // Update slide and sub-slide number indicators in footer
+    const slideNumberSpan = slide.querySelector('.slide-number');
+    const totalSlidesSpan = slide.querySelector('.total-slides');
+    const subSlideNumberSpan = slide.querySelector('.sub-slide-number');
+    slideNumberSpan.textContent = index + 1; // Slides start from 1
+    totalSlidesSpan.textContent = slides.length;
+    subSlideNumberSpan.textContent = currentSubSlideIndex + 1;
+  });
+});
+
+</script>
