@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Computing Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Basic reset and full viewport height */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh; /* Full height of the viewport */
+            display: flex; /* Use flexbox for easy centering */
+            flex-direction: column; /* Stack items vertically */
+            justify-content: space-between; /* Distribute space between header, content, and footer */
+            align-items: center; /* Center content horizontally */
+            /* Retro background color */
+            background-color: #1a202c; /* Dark blue-gray, like a terminal background */
+            cursor: crosshair; /* Keep mouse style as crosshairs */
+            font-family: 'Press Start 2P', cursive; /* Pixelated retro font */
+            color: #00ff00; /* Vibrant green, classic terminal text color */
+            overflow-y: auto; /* Allow vertical scrolling if content exceeds viewport height */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+
+        /* Styles for the Header Bar */
+        .header-bar {
+            width: 100%;
+            background-color: #000080; /* Dark blue, like a classic GUI title bar */
+            padding: 15px 0;
+            text-align: center;
+            font-size: 1.5em; /* Adjusted for pixel font */
+            font-weight: normal; /* Pixel fonts often don't need bold */
+            color: #ffffff; /* White text for contrast */
+            border: 2px outset #ffffff; /* 3D effect border */
+            border-radius: 0; /* Sharp corners */
+            flex-shrink: 0; /* Prevent header from shrinking */
+            text-shadow: 2px 2px #000000; /* Subtle text shadow for definition */
+        }
+
+        /* Container for the main content to give it a background and sharp corners */
+        .content {
+            text-align: center; /* Center text within this block */
+            max-width: 800px; /* Maximum width for readability */
+            padding: 30px; /* Internal padding */
+            background-color: #c0c0c0; /* Light gray, common for application windows */
+            border-radius: 0; /* Sharp corners */
+            border: 3px outset #808080; /* 3D effect border for the window */
+            margin: 20px; /* Margin around the content box */
+            box-sizing: border-box; /* Include padding in the element's total width and height */
+            flex-grow: 1; /* Allow content to grow and take available space */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #000000; /* Black text for content for readability on light gray */
+        }
+
+        /* Styling for the paragraph */
+        p {
+            font-size: 1.2em; /* Adjusted for pixel font, which can be larger */
+            line-height: 1.8; /* More spacing for readability with pixel font */
+            margin-bottom: 30px; /* Space below the paragraph */
+            color: #000000; /* Black text for better contrast on light gray background */
+        }
+
+        /* Styling for the random image */
+        .content img {
+            max-width: 90%; /* Ensure image is responsive */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 0; /* Sharp corners for the image */
+            margin-bottom: 30px; /* Space below the image */
+            border: 2px solid #00ff00; /* Green border for retro look */
+            image-rendering: pixelated; /* Ensures pixel art stays sharp */
+            box-shadow: 4px 4px #000000; /* Blocky shadow */
+        }
+
+        /* Container for the icons */
+        .icon-container {
+            display: flex; /* Use flexbox to arrange icons horizontally */
+            justify-content: center; /* Center icons horizontally */
+            gap: 30px; /* Space between icons */
+            margin-top: 30px; /* Space above the icons */
+            flex-wrap: wrap; /* Allow icons to wrap to the next line on smaller screens */
+        }
+
+        /* Styling for individual icon links */
+        .icon-container a {
+            font-size: 3em; /* Adjusted icon size for pixel font */
+            color: #00ff00; /* Vibrant green for icons */
+            text-decoration: none; /* Remove underline from links */
+            transition: transform 0.1s ease-in-out, color 0.1s ease-in-out; /* Faster transition for retro feel */
+            padding: 8px; /* Add padding to increase clickable area */
+            border-radius: 0; /* Sharp corners */
+            border: 2px outset #00ff00; /* 3D effect border for icons */
+            background-color: #333333; /* Dark background for icons */
+            box-shadow: 2px 2px #000000; /* Blocky shadow */
+        }
+
+        /* Hover effect for icons */
+        .icon-container a:hover {
+            transform: translate(2px, 2px); /* Simulate button press */
+            color: #ffffff; /* White on hover */
+            border: 2px inset #00ff00; /* Inset border on hover */
+            box-shadow: none; /* Remove shadow on press */
+        }
+
+        /* Styles for the Footer Bar */
+        .footer-bar {
+            width: 100%;
+            background-color: #000080; /* Dark blue, matching header */
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.9em; /* Adjusted for pixel font */
+            color: #ffffff; /* White text */
+            border: 2px outset #ffffff; /* 3D effect border */
+            border-radius: 0; /* Sharp corners */
+            flex-shrink: 0; /* Prevent footer from shrinking */
+            text-shadow: 2px 2px #000000; /* Subtle text shadow for definition */
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .header-bar {
+                font-size: 1.2em;
+                padding: 10px 0;
+            }
+            p {
+                font-size: 1em; /* Adjust paragraph font size for tablets */
+            }
+            .icon-container a {
+                font-size: 2.5em; /* Adjust icon size for tablets */
+            }
+            .content {
+                margin: 10px;
+                padding: 20px;
+            }
+            .footer-bar {
+                font-size: 0.8em;
+                padding: 8px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-bar {
+                font-size: 1em;
+                padding: 8px 0;
+            }
+            p {
+                font-size: 0.9em; /* Adjust paragraph font size for mobile */
+            }
+            .icon-container {
+                gap: 20px; /* Reduce gap between icons on mobile */
+            }
+            .icon-container a {
+                font-size: 2em; /* Adjust icon size for mobile */
+                padding: 5px;
+            }
+            .content {
+                padding: 15px; /* Reduce padding for content box on mobile */
+                margin: 5px;
+            }
+            .footer-bar {
+                font-size: 0.7em;
+                padding: 6px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        C:\> WELCOME TO WINDOWS 98
+    </div>
+
+    <div class="content">
+        <img src="retro_pc_mono.png" alt="Retro computing graphic">
+
+        <p>
+            Here, I'll add remnants of my digital creations from the early to mid 2000s. Using the family computer running Windows 98, circa 2001, I taugh myself HTML, JavaScript and PHP when I was a university student. I experimented with creating web pages in Geocities, and even got my own domain dot com registered for free for a few years. Except for a few HTML pages, some random screenshots and a couple of esoteric JavaScript code, I can't locate much of the content from from that time. I will share the pieces I can salvage.
+        </p>
+        <div class="icon-container">
+            <a href="https://www.example.com/photos" target="_blank" aria-label="Photos"><i class="fas fa-camera"></i></a>
+            <a href="https://www.example.com/launch" target="_blank" aria-label="Launch"><i class="fas fa-rocket"></i></a>
+            <a href="https://www.example.com/read" target="_blank" aria-label="Read"><i class="fas fa-book"></i></a>
+            <a href="https://www.example.com/music" target="_blank" aria-label="Music"><i class="fas fa-music"></i></a>
+            <a href="https://www.example.com/explore" target="_blank" aria-label="Explore"><i class="fas fa-globe-americas"></i></a>
+        </div>
+    </div>
+
+    <div class="footer-bar">
+        C:\>_ COPYRIGHT 1990-2025 ALL RIGHTS RESERVED
+    </div>
+
+    </body>
+</html>

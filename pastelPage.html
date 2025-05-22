@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastel Gradient Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Basic reset and full viewport height */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh; /* Full height of the viewport */
+            display: flex; /* Use flexbox for easy centering */
+            flex-direction: column; /* Stack items vertically */
+            justify-content: space-between; /* Distribute space between header, content, and footer */
+            align-items: center; /* Center content horizontally */
+            /* Initial gradient background (will be overwritten by JS) */
+            background: linear-gradient(to right, #e0f7fa, #e8f5e9, #fffde7, #ffe0b2, #fce4ec);
+            cursor: crosshair; /* Change mouse style to crosshairs */
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            color: #333; /* Dark gray text color */
+            overflow-y: auto; /* Allow vertical scrolling if content exceeds viewport height */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            transition: background 1s ease-in-out; /* Smooth transition for background change */
+        }
+
+        /* Styles for the Header Bar */
+        .header-bar {
+            width: 100%;
+            background-color: rgba(200, 230, 201, 0.9); /* Light green pastel */
+            padding: 20px 0;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2e7d32; /* Darker green for contrast */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+
+        /* Container for the main content to give it a background and rounded corners */
+        .content {
+            text-align: center; /* Center text within this block */
+            max-width: 800px; /* Maximum width for readability */
+            padding: 40px; /* Internal padding */
+            background-color: rgba(255, 255, 255, 0.85); /* Slightly transparent white background */
+            border-radius: 20px; /* Rounded corners for the content box */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
+            margin: 20px; /* Margin around the content box to prevent it from touching edges */
+            box-sizing: border-box; /* Include padding in the element's total width and height */
+            flex-grow: 1; /* Allow content to grow and take available space */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Styling for the paragraph */
+        p {
+            font-size: 2.2em; /* Large text size */
+            line-height: 1.5; /* Spacing between lines for readability */
+            margin-bottom: 30px; /* Space below the paragraph */
+            color: #444; /* Slightly darker text for the paragraph */
+        }
+
+        /* Styling for the random image */
+        .content img {
+            max-width: 90%; /* Ensure image is responsive */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 10px; /* Rounded corners for the image */
+            margin-bottom: 30px; /* Space below the image */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for the image */
+        }
+
+        /* Container for the icons */
+        .icon-container {
+            display: flex; /* Use flexbox to arrange icons horizontally */
+            justify-content: center; /* Center icons horizontally */
+            gap: 40px; /* Space between icons */
+            margin-top: 30px; /* Space above the icons */
+            flex-wrap: wrap; /* Allow icons to wrap to the next line on smaller screens */
+        }
+
+        /* Styling for individual icon links */
+        .icon-container a {
+            font-size: 4em; /* Large icon size */
+            color: #81c784; /* A pleasant light green color for icons */
+            text-decoration: none; /* Remove underline from links */
+            transition: transform 0.3s ease-in-out, color 0.3s ease-in-out; /* Smooth transition for hover effects */
+            padding: 10px; /* Add padding to increase clickable area */
+            border-radius: 15px; /* Rounded corners for the clickable area */
+        }
+
+        /* Hover effect for icons */
+        .icon-container a:hover {
+            transform: translateY(-8px) scale(1.1); /* Lift and slightly enlarge on hover */
+            color: #4CAF50; /* Darker green on hover */
+        }
+
+        /* Styles for the Footer Bar */
+        .footer-bar {
+            width: 100%;
+            background-color: rgba(255, 224, 178, 0.9); /* Light orange pastel */
+            padding: 15px 0;
+            text-align: center;
+            font-size: 1.1em;
+            color: #e65100; /* Darker orange for contrast */
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            flex-shrink: 0; /* Prevent footer from shrinking */
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .header-bar {
+                font-size: 1.5em;
+                padding: 15px 0;
+            }
+            p {
+                font-size: 1.8em; /* Adjust paragraph font size for tablets */
+            }
+            .icon-container a {
+                font-size: 3em; /* Adjust icon size for tablets */
+            }
+            .content {
+                margin: 15px;
+                padding: 30px;
+            }
+            .footer-bar {
+                font-size: 1em;
+                padding: 10px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-bar {
+                font-size: 1.2em;
+                padding: 10px 0;
+            }
+            p {
+                font-size: 1.4em; /* Adjust paragraph font size for mobile */
+            }
+            .icon-container {
+                gap: 25px; /* Reduce gap between icons on mobile */
+            }
+            .icon-container a {
+                font-size: 2.5em; /* Adjust icon size for mobile */
+            }
+            .content {
+                padding: 25px; /* Reduce padding for content box on mobile */
+                margin: 10px;
+            }
+            .footer-bar {
+                font-size: 0.9em;
+                padding: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        My neocities page
+    </div>
+
+    <div class="content">
+        <img src="retro_pc.png" alt="An illustration of a retro personal computer from the 1990s">
+
+        <p>
+            Here, I'll add remnants of my digital creations from the early to mid 2000s. Using the family computer running Windows 98, circa 2001, I taugh myself HTML, JavaScript and PHP when I was a university student. I experimented with creating web pages in Geocities, and even got my own domain dot com registered for free for a few years. Except for a few HTML pages, some random screenshots and a couple of esoteric JavaScript code, I can't locate much of the content from from that time. I will share the pieces I can salvage.
+        </p>
+        <div class="icon-container">
+            <a href="https://www.example.com/photos" target="_blank" aria-label="Photos"><i class="fas fa-camera"></i></a>
+            <a href="https://www.example.com/launch" target="_blank" aria-label="Launch"><i class="fas fa-rocket"></i></a>
+            <a href="https://www.example.com/read" target="_blank" aria-label="Read"><i class="fas fa-book"></i></a>
+            <a href="https://www.example.com/music" target="_blank" aria-label="Music"><i class="fas fa-music"></i></a>
+            <a href="https://www.example.com/explore" target="_blank" aria-label="Explore"><i class="fas fa-globe-americas"></i></a>
+        </div>
+    </div>
+
+    <div class="footer-bar">
+        &copy; 2025 Pastel Creations. All rights reserved.
+    </div>
+
+    <script>
+        // Function to generate a random pastel color
+        function getRandomPastelColor() {
+            // Generate random RGB values within a pastel range (e.g., 200-255 for lightness)
+            const r = Math.floor(Math.random() * 56) + 200; // 200-255
+            const g = Math.floor(Math.random() * 56) + 200; // 200-255
+            const b = Math.floor(Math.random() * 56) + 200; // 200-255
+            // Convert RGB to hex
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        // Function to set a new random gradient background
+        function setRandomGradient() {
+            const color1 = getRandomPastelColor();
+            const color2 = getRandomPastelColor();
+            const color3 = getRandomPastelColor();
+            const color4 = getRandomPastelColor();
+            const color5 = getRandomPastelColor();
+
+            // Set the background with a linear gradient using the generated colors
+            document.body.style.background = `linear-gradient(to right, ${color1}, ${color2}, ${color3}, ${color4}, ${color5})`;
+        }
+
+        // Call the function to set the gradient when the page loads
+        window.onload = setRandomGradient;
+    </script>
+</body>
+</html>
