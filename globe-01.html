@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Globe with Three.js</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; color: #fff; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none; /* Prevent tooltip from blocking mouse events on canvas */
+            display: none; /* Hidden by default */
+            transform: translate(-50%, -120%); /* Position above the cursor/point */
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="tooltip" class="tooltip"></div>
+    <script>
+        // Ensure Three.js and OrbitControls are loaded before running the script
+        window.onload = function() {
+            let scene, camera, renderer, globe, controls;
+            let raycaster, mouse;
+            let highlightedCity = null;
+            const cityMarkers = [];
+            const tooltipElement = document.getElementById('tooltip');
+
+            // City data: name, latitude, longitude, color
+            const cities = [
+                { name: 'London', lat: 51.5074, lon: -0.1278, color: 0xff0000 }, // Red
+                { name: 'Tokyo', lat: 35.6895, lon: 139.6917, color: 0xffff00 }, // Yellow
+                { name: 'Melbourne', lat: -37.8136, lon: 144.9631, color: 0x00ffff } // Aqua
+            ];
+            const GLOBE_RADIUS = 5; // Radius of the Earth globe
+            const MARKER_SIZE = 0.08; // Size of the city markers
+
+            init();
+            animate();
+
+            function init() {
+                // --- Scene Setup ---
+                scene = new THREE.Scene();
+
+                // --- Camera Setup ---
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 12; // Initial camera distance
+
+                // --- Renderer Setup ---
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(window.devicePixelRatio); // For sharper rendering on high-DPI screens
+                document.body.appendChild(renderer.domElement);
+
+                // --- Lighting ---
+                const ambientLight = new THREE.AmbientLight(0xaaaaaa); // Soft white light
+                scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+                directionalLight.position.set(5, 3, 5);
+                scene.add(directionalLight);
+
+                // --- Globe (Earth) ---
+                const globeGeometry = new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64); // Sphere with good detail
+                // Texture for the globe
+                const textureLoader = new THREE.TextureLoader();
+                const earthTexture = textureLoader.load(
+                    'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg', // A commonly used Earth texture
+                    undefined, // onLoad callback
+                    undefined, // onProgress callback
+                    (err) => { // onError callback
+                        console.error('Error loading Earth texture:', err);
+                        // Fallback to a simple blue material if texture fails to load
+                        const fallbackMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff, shininess: 30 });
+                        globe.material = fallbackMaterial;
+                    }
+                );
+                const globeMaterial = new THREE.MeshPhongMaterial({ map: earthTexture, shininess: 30 });
+                globe = new THREE.Mesh(globeGeometry, globeMaterial);
+                scene.add(globe);
+                
+                // --- Starry Background (optional) ---
+                const starGeometry = new THREE.SphereGeometry(200, 64, 64); // Large sphere for stars
+                const starTexture = textureLoader.load(
+                    'https://unpkg.com/three-globe/example/img/night-sky.png',
+                     undefined, undefined, (err) => {
+                        console.error('Error loading star texture:', err);
+                     }
+                );
+                const starMaterial = new THREE.MeshBasicMaterial({
+                    map: starTexture,
+                    side: THREE.BackSide // Render on the inside of the sphere
+                });
+                const stars = new THREE.Mesh(starGeometry, starMaterial);
+                scene.add(stars);
+
+
+                // --- City Markers ---
+                cities.forEach(city => {
+                    const markerGeometry = new THREE.SphereGeometry(MARKER_SIZE, 16, 16);
+                    const markerMaterial = new THREE.MeshBasicMaterial({ color: city.color });
+                    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+                    // Convert lat/lon to 3D Cartesian coordinates
+                    const position = latLonToVector3(city.lat, city.lon, GLOBE_RADIUS + 0.01); // Slightly above surface
+                    marker.position.copy(position);
+                    marker.userData = { name: city.name, type: 'cityMarker' }; // Store city name for tooltip
+                    
+                    globe.add(marker); // Add marker as a child of the globe for easier rotation
+                    cityMarkers.push(marker);
+                });
+
+                // --- Controls ---
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true; // Smooth camera movement
+                controls.dampingFactor = 0.05;
+                controls.minDistance = GLOBE_RADIUS + 2; // Prevent zooming inside the globe
+                controls.maxDistance = 50;
+
+                // --- Raycaster for Mouse Interaction (Tooltips) ---
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+
+                // --- Event Listeners ---
+                window.addEventListener('resize', onWindowResize, false);
+                document.addEventListener('mousemove', onMouseMove, false);
+            }
+
+            // Function to convert Latitude/Longitude to 3D Cartesian coordinates
+            function latLonToVector3(lat, lon, radius) {
+                const phi = (90 - lat) * (Math.PI / 180); // Polar angle (from +Y)
+                const theta = (lon + 180) * (Math.PI / 180); // Azimuthal angle (around Y, from +Z)
+
+                const x = -(radius * Math.sin(phi) * Math.cos(theta));
+                const y = radius * Math.cos(phi);
+                const z = radius * Math.sin(phi) * Math.sin(theta);
+
+                return new THREE.Vector3(x, y, z);
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function onMouseMove(event) {
+                // Calculate mouse position in normalized device coordinates (-1 to +1)
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                // Update tooltip position to follow mouse for general movement
+                tooltipElement.style.left = `${event.clientX}px`;
+                tooltipElement.style.top = `${event.clientY}px`;
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Update controls
+                controls.update();
+
+                // Rotate the globe slowly (optional)
+                // globe.rotation.y += 0.0005;
+
+                // --- Raycasting for Tooltips ---
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(cityMarkers, true); // Check intersections with city markers
+
+                if (intersects.length > 0) {
+                    const intersectedObject = intersects[0].object;
+                    if (intersectedObject.userData.type === 'cityMarker') {
+                        if (highlightedCity !== intersectedObject) {
+                            highlightedCity = intersectedObject;
+                            tooltipElement.textContent = highlightedCity.userData.name;
+                            tooltipElement.style.display = 'block';
+                        }
+                        // Update tooltip position based on the marker's screen position
+                        const screenPosition = toScreenPosition(highlightedCity, camera);
+                        tooltipElement.style.left = `${screenPosition.x}px`;
+                        tooltipElement.style.top = `${screenPosition.y}px`;
+
+                    }
+                } else {
+                    if (highlightedCity) {
+                        tooltipElement.style.display = 'none';
+                        highlightedCity = null;
+                    }
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            // Helper function to convert 3D object position to 2D screen coordinates
+            function toScreenPosition(obj, cam) {
+                const vector = new THREE.Vector3();
+                const widthHalf = 0.5 * renderer.domElement.width;
+                const heightHalf = 0.5 * renderer.domElement.height;
+
+                obj.updateMatrixWorld(); // Ensure world matrix is up to date
+                vector.setFromMatrixPosition(obj.matrixWorld);
+                vector.project(cam); // Project 3D point to normalized device coordinates
+
+                vector.x = (vector.x * widthHalf) + widthHalf;
+                vector.y = -(vector.y * heightHalf) + heightHalf;
+
+                return {
+                    x: vector.x,
+                    y: vector.y
+                };
+            }
+        }; // End of window.onload
+    </script>
+</body>
+</html>
