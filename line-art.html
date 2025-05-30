@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-####">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometric Harmonies: Algorithmic String Art Weaver</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color-light: #f0f8ff; /* AliceBlue */
+            --canvas-bg-light: #ffffff;
+            --control-bg-light: #e6e6fa; /* Lavender */
+            --text-color-light: #4682b4; /* SteelBlue */
+            --input-border-light: #add8e6; /* LightBlue */
+            --button-bg-light: #9370db; /* MediumPurple */
+            --button-hover-light: #8a2be2; /* BlueViolet */
+            --border-color-light: #ccc;
+            --shadow-color-light: rgba(0, 0, 0, 0.1);
+            --toggle-off-bg: #ccc;
+            --toggle-thumb-color: white;
+        }
+
+        body.dark-mode {
+            --bg-color-light: #1a1a2e; /* Dark Blue */
+            --canvas-bg-light: #0f0f1a; /* Even darker */
+            --control-bg-light: #2e004d; /* Dark Purple */
+            --text-color-light: #b0e0e6; /* PowderBlue */
+            --input-border-light: #6a5acd; /* SlateBlue */
+            --button-bg-light: #8a2be2; /* BlueViolet */
+            --button-hover-light: #9932cc; /* DarkOrchid */
+            --border-color-light: #444;
+            --shadow-color-light: rgba(0, 0, 0, 0.3);
+            --toggle-off-bg: #555;
+            --toggle-thumb-color: #eee;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars due to canvas */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color-light);
+            color: var(--text-color-light);
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--canvas-bg-light);
+            transition: background-color 0.5s ease;
+            cursor: grab; /* Indicate canvas is draggable */
+        }
+
+        canvas.panning {
+            cursor: grabbing;
+        }
+
+        .controls-container {
+            position: absolute;
+            top: 50px; /* Initial position */
+            left: 50px; /* Initial position */
+            background-color: var(--control-bg-light);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px var(--shadow-color-light);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000; /* Ensure it's above the canvas */
+            cursor: grab; /* Indicates it's draggable */
+            border: 1px solid var(--border-color-light);
+            transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, height 0.3s ease, padding 0.3s ease;
+            min-width: 250px; /* Ensure it doesn't get too small */
+        }
+
+        .controls-container.dragging {
+            cursor: grabbing;
+        }
+
+        .controls-container.minimized {
+            padding: 10px 20px; /* Smaller padding when minimized */
+            height: auto; /* Allow content to dictate height */
+            overflow: hidden; /* Hide overflowing content */
+            align-items: center; /* Center title when minimized */
+            gap: 5px; /* Smaller gap */
+            cursor: pointer; /* Indicate it's clickable to expand */
+        }
+
+        .controls-container.minimized .control-group,
+        .controls-container.minimized button:not(#minimizeButton):not(#darkModeToggle) {
+            display: none; /* Hide controls when minimized */
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 10px;
+            cursor: grab; /* Still draggable by header */
+        }
+
+        .controls-header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            color: var(--text-color-light);
+        }
+
+        #minimizeButton {
+            background: none;
+            border: none;
+            color: var(--text-color-light);
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.2s ease, color 0.2s ease;
+            box-shadow: none; /* Remove button shadow */
+        }
+
+        #minimizeButton:hover {
+            transform: scale(1.1);
+            color: var(--button-hover-light);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between icon and text */
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-color-light);
+            transition: color 0.5s ease;
+        }
+
+        .control-group label svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor; /* Icon color inherits from parent text color */
+            transition: fill 0.5s ease;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .radio-group label {
+            margin-bottom: 0; /* Override default label margin */
+            font-weight: normal;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            border: 1px solid var(--input-border-light);
+            border-radius: 6px;
+            width: 100px;
+            background-color: var(--canvas-bg-light); /* Matches canvas background */
+            color: var(--text-color-light);
+            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Custom Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 45px; /* Smaller width for toggle */
+            height: 25px; /* Smaller height for toggle */
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--toggle-off-bg);
+            transition: .4s;
+            border-radius: 25px; /* Rounded corners for the track */
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 19px; /* Height of the thumb */
+            width: 19px; /* Width of the thumb */
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--toggle-thumb-color);
+            transition: .4s;
+            border-radius: 50%; /* Rounded thumb */
+        }
+
+        input:checked + .slider {
+            background-color: var(--button-bg-light); /* On state color */
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px); /* Move thumb to the right */
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 80px;
+            height: 35px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 4px;
+            overflow: hidden; /* Hide default color picker border */
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border-radius: 4px;
+            border: 1px solid var(--input-border-light);
+        }
+
+        input[type="color"]::-moz-color-swatch {
+            border-radius: 4px;
+            border: 1px solid var(--input-border-light);
+        }
+
+        button {
+            padding: 12px 25px;
+            background-color: var(--button-bg-light);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: var(--button-hover-light);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-mode-toggle {
+            align-self: center; /* Center the toggle button */
+            margin-top: 10px;
+            background-color: #6a5acd; /* SlateBlue */
+            color: white;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: #483d8b; /* DarkSlateBlue */
+        }
+
+        #fullscreenToggle {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 25px;
+            background-color: #20b2aa; /* LightSeaGreen */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1001; /* Above controls */
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        #fullscreenToggle:hover {
+            background-color: #1a8f87; /* Darker LightSeaGreen */
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        #fullscreenToggle:active {
+            transform: translateX(-50%) translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .controls-container {
+                width: calc(100% - 40px); /* Adjust width for smaller screens */
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                margin: auto; /* Center horizontally */
+            }
+            #fullscreenToggle {
+                width: calc(100% - 40px);
+                left: 20px;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stringArtCanvas"></canvas>
+
+    <div class="controls-container" id="controlsContainer">
+        <div class="controls-header" id="controlsHeader">
+            <h2>Weave Parameters</h2>
+            <button id="minimizeButton" aria-label="Minimize/Maximize">&#x2212;</button>
+        </div>
+
+        <div class="control-group">
+            <label for="numLines">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 18h17v-2H4v2zm0-5h17v-2H4v2zm0-5h17V6H4v2z"/></svg>
+                Number of Strands (10-100):
+            </label>
+            <input type="number" id="numLines" value="50" min="10" max="100">
+        </div>
+        <div class="control-group">
+            <label for="numAxes">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 2.71.71-.71L12 2z"/></svg>
+                Number of Base Points (2-8):
+            </label>
+            <input type="number" id="numAxes" value="4" min="2" max="8">
+        </div>
+        <div class="control-group">
+            <label for="lineThickness">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+                Strand Thickness (1-10):
+            </label>
+            <input type="number" id="lineThickness" value="2" min="1" max="10">
+        </div>
+
+        <div class="control-group">
+            <label>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Animation Speed:
+            </label>
+            <div class="radio-group">
+                <input type="radio" id="speedSlow" name="animationSpeed" value="slow">
+                <label for="speedSlow">Slow</label>
+                <input type="radio" id="speedMedium" name="animationSpeed" value="medium" checked>
+                <label for="speedMedium">Medium</label>
+                <input type="radio" id="speedFast" name="animationSpeed" value="fast">
+                <label for="speedFast">Fast</label>
+            </div>
+        </div>
+
+        <div class="control-group toggle-container">
+            <label for="loopAnimationCheckbox">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                Loop Animation
+            </label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="loopAnimationCheckbox">
+                <span class="slider round"></span>
+            </label>
+        </div>
+
+        <div class="control-group toggle-container">
+            <label for="useCustomColorCheckbox">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
+                Use Custom Color
+            </label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="useCustomColorCheckbox">
+                <span class="slider round"></span>
+            </label>
+            <input type="color" id="customColorPicker" value="#6495ED" disabled>
+        </div>
+
+        <button id="generateArt">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M19.7 12.3c-.6-.6-1.5-.6-2.1 0L12 17.9l-5.6-5.6c-.6-.6-1.5-.6-2.1 0-.6.6-.6 1.5 0 2.1l6.7 6.7c.3.3.7.4 1.1.4s.8-.1 1.1-.4l6.7-6.7c.6-.6.6-1.5 0-2.1zM12 4c.83 0 1.5-.67 1.5-1.5V.5c0-.83-.67-1.5-1.5-1.5S10.5-.33 10.5.5v2C10.5 3.33 11.17 4 12 4zM22 12c0-.83-.67-1.5-1.5-1.5H19c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h1.5c.83 0 1.5-.67 1.5-1.5zM3.5 12c0-.83-.67-1.5-1.5-1.5H.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5H2c.83 0 1.5-.67 1.5-1.5z"/></svg>
+            Generate Harmony
+        </button>
+        <button id="darkModeToggle" class="dark-mode-toggle">
+            <span id="darkModeIcon">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12 20.25c-4.55 0-8.25-3.7-8.25-8.25S7.45 3.75 12 3.75s8.25 3.7 8.25 8.25-3.7 8.25-8.25 8.25zM11.25 6.75h1.5v3h-1.5zM11.25 14.25h1.5v3h-1.5zM6.75 11.25h3v1.5h-3zM14.25 11.25h3v1.5h-3z"/></svg>
+            </span>
+            Toggle Dark Mode
+        </button>
+    </div>
+
+    <button id="fullscreenToggle">
+        <span id="fullscreenIcon">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </span>
+        Go Fullscreen
+    </button>
+
+    <script>
+        const canvas = document.getElementById('stringArtCanvas');
+        const ctx = canvas.getContext('2d');
+        const numLinesInput = document.getElementById('numLines');
+        const numAxesInput = document.getElementById('numAxes');
+        const lineThicknessInput = document.getElementById('lineThickness');
+        const generateArtButton = document.getElementById('generateArt');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const controlsHeader = document.getElementById('controlsHeader');
+        const minimizeButton = document.getElementById('minimizeButton');
+        const body = document.body;
+        const fullscreenToggle = document.getElementById('fullscreenToggle');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        const fullscreenIcon = document.getElementById('fullscreenIcon');
+
+        // Animation speed radio buttons
+        const speedSlowRadio = document.getElementById('speedSlow');
+        const speedMediumRadio = document.getElementById('speedMedium');
+        const speedFastRadio = document.getElementById('speedFast');
+
+        // Loop animation toggle
+        const loopAnimationCheckbox = document.getElementById('loopAnimationCheckbox');
+
+        // Custom color controls
+        const useCustomColorCheckbox = document.getElementById('useCustomColorCheckbox');
+        const customColorPicker = document.getElementById('customColorPicker');
+
+        let isDragging = false;
+        let offsetX, offsetY;
+        let isMinimized = false;
+
+        // Animation variables
+        let animationFrameId;
+        let currentLineIndex = 0;
+        let allLinesToDraw = []; // Stores all line data for animation
+        let lineDrawProgress = 0; // Progress of drawing the current line (0 to 1)
+        let lineAnimationSpeed = 1 / 15; // How much progress per frame (e.g., 1/15 means 15 frames to draw a line)
+        let animationPhase = 'drawing'; // 'drawing' or 'erasing'
+
+        // Zoom and Pan variables
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        const zoomSensitivity = 0.1;
+        const highlightGlowColor = 'rgba(255, 255, 0, 0.8)'; // Bright yellow/gold glow
+
+        // Pan variables
+        let isPanning = false;
+        let lastMouseX, lastMouseY;
+
+        // Set canvas dimensions to full screen
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            zoom = 1;
+            panX = 0;
+            panY = 0;
+            generateStringArt();
+        }
+
+        // Initialize canvas size and attach resize listener
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
+
+        // Draggable controls functionality
+        controlsHeader.addEventListener('mousedown', (e) => {
+            if (e.target === controlsHeader || e.target === controlsHeader.querySelector('h2')) {
+                isDragging = true;
+                controlsContainer.classList.add('dragging');
+                offsetX = e.clientX - controlsContainer.getBoundingClientRect().left;
+                offsetY = e.clientY - controlsContainer.getBoundingClientRect().top;
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let newLeft = e.clientX - offsetX;
+            let newTop = e.clientY - offsetY;
+
+            newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - controlsContainer.offsetWidth));
+            newTop = Math.max(0, Math.min(newTop, window.innerHeight - controlsContainer.offsetHeight));
+
+            controlsContainer.style.left = `${newLeft}px`;
+            controlsContainer.style.top = `${newTop}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            controlsContainer.classList.remove('dragging');
+        });
+
+        // Zoom functionality
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault(); // Prevent page scrolling
+
+            const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+            const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+
+            const zoomFactor = 1 + (e.deltaY < 0 ? zoomSensitivity : -zoomSensitivity);
+
+            const newPanX = mouseX - (mouseX - panX) * zoomFactor;
+            const newPanY = mouseY - (mouseY - panY) * zoomFactor;
+
+            zoom *= zoomFactor;
+            panX = newPanX;
+            panY = newPanY;
+
+            // Redraw to apply zoom/pan immediately
+            if (animationFrameId) {
+                // If animation is running, it will redraw on the next frame
+            } else {
+                // If animation is not running, force a redraw
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(panX, panY);
+                ctx.scale(zoom, zoom);
+                allLinesToDraw.forEach(line => drawLine(line));
+                ctx.restore();
+            }
+        });
+
+        // Pan functionality
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Left mouse button
+                isPanning = true;
+                canvas.classList.add('panning');
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+
+                panX += dx;
+                panY += dy;
+
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+
+                // Redraw to apply pan immediately
+                if (animationFrameId) {
+                    // If animation is running, it will redraw on the next frame
+                } else {
+                    // If animation is not running, force a redraw
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.save();
+                    ctx.translate(panX, panY);
+                    ctx.scale(zoom, zoom);
+                    allLinesToDraw.forEach(line => drawLine(line));
+                    ctx.restore();
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isPanning = false;
+            canvas.classList.remove('panning');
+        });
+
+        // Prevent context menu on right-click to allow panning with right-click (optional)
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+
+        function getRandomPastelColor() {
+            const hue = Math.floor(Math.random() * 360);
+            const saturation = Math.floor(Math.random() * 20) + 70; // 70-90% saturation
+            const lightness = Math.floor(Math.random() * 15) + 75; // 75-90% lightness
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        // Function to draw a single complete line (no glow)
+        function drawLine(lineData) {
+            ctx.beginPath();
+            ctx.moveTo(lineData.startX, lineData.startY);
+            ctx.lineTo(lineData.endX, lineData.endY);
+            ctx.strokeStyle = lineData.color;
+            ctx.lineWidth = lineData.thickness;
+            ctx.stroke();
+        }
+
+        // Function to draw a partial line with optional glow
+        function drawPartialLine(lineData, progress, applyGlow = false) {
+            const { startX, startY, endX, endY, color, thickness } = lineData;
+
+            if (applyGlow) {
+                ctx.save(); // Save context state before applying glow
+                ctx.shadowBlur = 15; // Adjust for desired glow intensity
+                ctx.shadowColor = highlightGlowColor;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            const currentEndX = startX + (endX - startX) * progress;
+            const currentEndY = startY + (endY - startY) * progress;
+            ctx.lineTo(currentEndX, currentEndY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = thickness;
+            ctx.stroke();
+
+            if (applyGlow) {
+                ctx.restore(); // Restore context state to remove glow
+            }
+        }
+
+        // Main animation loop for drawing lines
+        function animateDrawing() {
+            // Clear the entire canvas (before transformations)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save(); // Save context state before applying zoom/pan
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+
+            // Redraw all lines that have already been fully drawn (no glow)
+            for (let i = 0; i < currentLineIndex; i++) {
+                drawLine(allLinesToDraw[i]);
+            }
+
+            // Draw the current line partially with glow
+            if (currentLineIndex < allLinesToDraw.length) {
+                drawPartialLine(allLinesToDraw[currentLineIndex], lineDrawProgress, true); // Apply glow
+                lineDrawProgress += lineAnimationSpeed;
+
+                if (lineDrawProgress >= 1) {
+                    // Current line is fully drawn, move to the next line
+                    drawLine(allLinesToDraw[currentLineIndex]); // Ensure the last segment is drawn perfectly without glow
+                    currentLineIndex++;
+                    lineDrawProgress = 0; // Reset for the next line
+                }
+            }
+
+            ctx.restore(); // Restore context state after zoom/pan
+
+            // Continue animation if there are more lines to draw or the current line is still being drawn
+            if (currentLineIndex < allLinesToDraw.length || (currentLineIndex < allLinesToDraw.length && lineDrawProgress > 0)) {
+                animationFrameId = requestAnimationFrame(animateDrawing);
+            } else {
+                // All lines drawn, check for looping or stop
+                if (loopAnimationCheckbox.checked) {
+                    animationPhase = 'erasing';
+                    currentLineIndex = 0; // Start erasing from the first line
+                    lineDrawProgress = 1; // Start erasing from full line
+                    animationFrameId = requestAnimationFrame(animateErasing);
+                } else {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        }
+
+        // Animation loop for erasing lines
+        function animateErasing() {
+            // Clear the entire canvas (before transformations)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save(); // Save context state before applying zoom/pan
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+
+            // Redraw all lines that should remain (lines *after* currentLineIndex)
+            for (let i = currentLineIndex + 1; i < allLinesToDraw.length; i++) {
+                drawLine(allLinesToDraw[i]);
+            }
+
+            // Erase the current line partially with glow
+            if (currentLineIndex < allLinesToDraw.length) {
+                drawPartialLine(allLinesToDraw[currentLineIndex], lineDrawProgress, true); // Apply glow
+                lineDrawProgress -= lineAnimationSpeed;
+
+                if (lineDrawProgress <= 0) {
+                    // Current line is fully erased, move to the next line to erase
+                    currentLineIndex++;
+                    lineDrawProgress = 1; // Reset for the next line to be erased
+                }
+            }
+
+            ctx.restore(); // Restore context state after zoom/pan
+
+            // Continue animation if there are more lines to erase or the current line is still being erased
+            if (currentLineIndex < allLinesToDraw.length || (currentLineIndex < allLinesToDraw.length && lineDrawProgress > 0)) {
+                animationFrameId = requestAnimationFrame(animateErasing);
+            } else {
+                // All lines erased, canvas is blank, transition back to drawing
+                animationPhase = 'drawing';
+                currentLineIndex = 0;
+                lineDrawProgress = 0;
+                animationFrameId = requestAnimationFrame(animateDrawing);
+            }
+        }
+
+        function generateStringArt() {
+            // Stop any ongoing animation
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            // Clear the canvas for a fresh drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Get user input values
+            const numLines = parseInt(numLinesInput.value);
+            const numAxes = parseInt(numAxesInput.value);
+            const lineThickness = parseInt(lineThicknessInput.value);
+            const useCustomColor = useCustomColorCheckbox.checked;
+            const customColor = customColorPicker.value;
+
+            // Input validation and user feedback
+            if (isNaN(numLines) || numLines < 10 || numLines > 100) {
+                console.error("Invalid number of lines. Please enter a value between 10 and 100.");
+                return;
+            }
+            if (isNaN(numAxes) || numAxes < 2 || numAxes > 8) {
+                console.error("Invalid number of axes. Please enter a value between 2 and 8.");
+                return;
+            }
+            if (isNaN(lineThickness) || lineThickness < 1 || lineThickness > 10) {
+                console.error("Invalid line thickness. Please enter a value between 1 and 10.");
+                return;
+            }
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.4;
+
+            const axesAngles = [];
+            for (let i = 0; i < numAxes; i++) {
+                const angle = (Math.PI * 2 / numAxes) * i;
+                axesAngles.push(angle);
+            }
+            axesAngles.sort((a, b) => a - b);
+
+            const allAxesPoints = [];
+            for (let i = 0; i < numAxes; i++) {
+                const currentAxisPoints = [];
+                const angle = axesAngles[i];
+                for (let j = 0; j < numLines; j++) {
+                    const t = j / (numLines - 1);
+                    const x = centerX + radius * t * Math.cos(angle);
+                    const y = centerY + radius * t * Math.sin(angle);
+                    currentAxisPoints.push({ x, y });
+                }
+                allAxesPoints.push(currentAxisPoints);
+            }
+
+            allLinesToDraw = [];
+
+            // First, add the axis lines
+            for (let i = 0; i < numAxes; i++) {
+                const angle = axesAngles[i];
+                allLinesToDraw.push({
+                    startX: centerX,
+                    startY: centerY,
+                    endX: centerX + radius * Math.cos(angle),
+                    endY: centerY + radius * Math.sin(angle),
+                    color: useCustomColor ? customColor : getRandomPastelColor(),
+                    thickness: lineThickness
+                });
+            }
+
+            // Then, add the string art lines
+            for (let i = 0; i < numAxes; i++) {
+                const currentAxisIndex = i;
+                const nextAxisIndex = (i + 1) % numAxes;
+
+                for (let j = 0; j < numLines; j++) {
+                    const startPoint = allAxesPoints[currentAxisIndex][numLines - 1 - j];
+                    const endPoint = allAxesPoints[nextAxisIndex][j];
+
+                    allLinesToDraw.push({
+                        startX: startPoint.x,
+                        startY: startPoint.y,
+                        endX: endPoint.x,
+                        endY: endPoint.y,
+                        color: useCustomColor ? customColor : getRandomPastelColor(),
+                        thickness: lineThickness
+                    });
+                }
+            }
+
+            // Reset animation state and start drawing
+            currentLineIndex = 0;
+            lineDrawProgress = 0;
+            animationPhase = 'drawing';
+            animateDrawing();
+        }
+
+        // Dark mode toggle functionality
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            // Update the icon based on dark mode state
+            updateDarkModeIcon();
+            // When toggling dark mode, stop current animation and redraw the final state
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            // Redraw all lines immediately in the new theme
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save(); // Apply current zoom/pan for static redraw
+            ctx.translate(panX, panY);
+            ctx.scale(zoom, zoom);
+            allLinesToDraw.forEach(line => drawLine(line)); // Draw full lines
+            ctx.restore();
+
+            // Reset animation state to ensure next generation starts correctly
+            currentLineIndex = 0;
+            lineDrawProgress = 0;
+            animationPhase = 'drawing';
+        });
+
+        function updateDarkModeIcon() {
+            if (body.classList.contains('dark-mode')) {
+                darkModeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12 20.25c-4.55 0-8.25-3.7-8.25-8.25S7.45 3.75 12 3.75s8.25 3.7 8.25 8.25-3.7 8.25-8.25 8.25zM11.25 6.75h1.5v3h-1.5zM11.25 14.25h1.5v3h-1.5zM6.75 11.25h3v1.5h-3zM14.25 11.25h3v1.5h-3z"/></svg>'; // Sun icon
+            } else {
+                darkModeIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>'; // Moon icon
+            }
+        }
+
+        function updateFullscreenIcon() {
+            if (document.fullscreenElement) {
+                fullscreenIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5V5h5v2H7v3zm6 8h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>'; // Shrink icon
+            } else {
+                fullscreenIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>'; // Expand icon
+            }
+        }
+
+
+        // Event listeners for animation speed radio buttons
+        speedSlowRadio.addEventListener('change', () => lineAnimationSpeed = 1 / 30);
+        speedMediumRadio.addEventListener('change', () => lineAnimationSpeed = 1 / 15);
+        speedFastRadio.addEventListener('change', () => lineAnimationSpeed = 1 / 5);
+
+        // Event listener for the generate button
+        generateArtButton.addEventListener('click', generateStringArt);
+
+        // Minimize/Maximize button functionality
+        minimizeButton.addEventListener('click', () => {
+            isMinimized = !isMinimized;
+            controlsContainer.classList.toggle('minimized', isMinimized);
+            minimizeButton.textContent = isMinimized ? '\u002B' : '\u2212';
+            minimizeButton.setAttribute('aria-label', isMinimized ? 'Maximize' : 'Minimize');
+        });
+
+        // Custom color toggle functionality
+        useCustomColorCheckbox.addEventListener('change', () => {
+            customColorPicker.disabled = !useCustomColorCheckbox.checked;
+            generateStringArt(); // Regenerate art to apply new color setting immediately
+        });
+
+        // Fullscreen toggle functionality
+        fullscreenToggle.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    setTimeout(resizeCanvas, 100);
+                }).catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            } else {
+                document.exitFullscreen().then(() => {
+                    setTimeout(resizeCanvas, 100);
+                }).catch(err => {
+                    console.error(`Error attempting to disable full-screen mode: ${err.message} (${err.name})`);
+                });
+            }
+        });
+
+        // Listen for fullscreen change events to update canvas size and icon
+        document.addEventListener('fullscreenchange', () => {
+            resizeCanvas();
+            updateFullscreenIcon();
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            resizeCanvas();
+            updateFullscreenIcon();
+        });
+        document.addEventListener('mozfullscreenchange', () => {
+            resizeCanvas();
+            updateFullscreenIcon();
+        });
+        document.addEventListener('MSFullscreenChange', () => {
+            resizeCanvas();
+            updateFullscreenIcon();
+        });
+
+        // Initial setup calls
+        updateDarkModeIcon(); // Set initial dark mode icon
+        updateFullscreenIcon(); // Set initial fullscreen icon
+        generateArt(); // Initial generation on page load
+    </script>
+</body>
+</html>
